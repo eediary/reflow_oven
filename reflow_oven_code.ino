@@ -8,11 +8,11 @@
 // sbi and cbi: https://arduino.stackexchange.com/questions/50423/sbi-and-cli-implementation (sbi() and cli() implementation)
 // ATMEGA328 datasheet: http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega48A-PA-88A-PA-168A-PA-328-P-DS-DS40002061A.pdf
 
-// VERSION 1.0 (10/20/2019)
+// VERSION 1.0.1 (10/21/2019)
 
 #include "reflow_oven_code.h"
 
-#define DEBUG
+//#define DEBUG
 
 // character arrays; should be same length as I2C width
 char str1[] = "                ";
@@ -21,8 +21,7 @@ char old_str1[] = "                ";
 char old_str2[] = "                ";
 
 // volatile variables for ISRs
-volatile byte buttons_val = 0; // uses 3 LSbs to show button status
-volatile bool update_flag = false; // flag indicating new temperature is available
+volatile bool update_flag = false, buttons_flag = false; // flags indicating interrupts
 
 // LiquidCrytal_PCF8574 object
 static LiquidCrystal_PCF8574 lcd(LCD_ADDR);
@@ -90,9 +89,11 @@ void loop()
     update_flag = false;
     PMODTC1_update(CS, &data);
   }
+
+  // Debounce function
   
   // Call UI + control relay
-  if(UI_state_machine(data, str1, str2, &buttons_val)){
+  if(UI_state_machine(data, str1, str2, debounce(&buttons_flag))){
     digitalWrite(RELAY, HIGH);
   } else{
     digitalWrite(RELAY, LOW);
@@ -111,12 +112,32 @@ void loop()
   delay(1);
 } // loop()
 
+// debounce function
+// checks buttons after debounce time
+byte debounce(volatile bool *flag){
+  static unsigned long start_time = 0;
+  if(*flag){
+    if(millis() > start_time + DEBOUNCE_TIME){
+      // debounce time has passed; clear flag + sample
+      *flag = false;
+      return (PINC & (L_MASK | M_MASK | R_MASK)) | F_MASK;
+    } else{
+      // still debouncing, so nothing to report
+      return 0;
+    }
+  } else{
+    // no flag set, so update start_time
+    start_time = millis();
+    return 0;
+  }
+}
+
 // ISR for when any button is pressed
 ISR (PCINT1_vect)
 {
   // Interrupt triggers if any of the buttons are pressed
-  // Set flag and read pins PINC1, PINC2 and PINC3
-  buttons_val = (PINC & (L_MASK | M_MASK | R_MASK)) | F_MASK;
+  // Set flag, will be read by debounce function
+  buttons_flag = true;
 }
 
 // ISR, telling system to sample TC Module every 25 ms

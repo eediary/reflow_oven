@@ -1,5 +1,5 @@
 #include "oven_UI.h"
-#define DEBUG
+//#define DEBUG
 
 static state UI_state = SELECT;
 static byte SELECT_var = 0;
@@ -18,7 +18,7 @@ static const unsigned long debug_period = 100;
 // uses byte buttons (LEFT, MIDDLE, RIGHT, FLAG) to choose next state
 // drives what str1 and str2 should be based on state + data
 // returns whether or not relay should be on, based on thermocouple readings
-bool UI_state_machine(PMODTC1_data data, char *str1, char *str2, volatile byte *buttons){
+bool UI_state_machine(PMODTC1_data data, char *str1, char *str2, byte buttons){
   bool to_return = false;
   char str_temp[4];
   
@@ -59,14 +59,14 @@ bool UI_state_machine(PMODTC1_data data, char *str1, char *str2, volatile byte *
         strcpy(str2, nav_string);
 
         // check buttons
-        if((*buttons & F_MASK) > 0){
+        if((buttons & F_MASK) > 0){
           // clear flag
-          *buttons &= ~F_MASK;
-          if((*buttons & L_MASK) == 0){
+          buttons &= ~F_MASK;
+          if((buttons & L_MASK) == 0){
             SELECT_var = max(0, SELECT_var-1);
-          } else if((*buttons & R_MASK) == 0){
+          } else if((buttons & R_MASK) == 0){
             SELECT_var = min(2, SELECT_var+1);
-          } else if((*buttons & M_MASK) == 0){
+          } else if((buttons & M_MASK) == 0){
             // Hit enter, so change state to PROFILE or MANUAL
             if(SELECT_var == 0 || SELECT_var == 1){
               UI_state = PROFILE;
@@ -120,10 +120,10 @@ bool UI_state_machine(PMODTC1_data data, char *str1, char *str2, volatile byte *
         strcat(str2, str_temp);
 
         // check buttons
-        if((*buttons & F_MASK) > 0){
+        if((buttons & F_MASK) > 0){
           // clear flag
-          *buttons &= ~F_MASK;
-          if((*buttons & M_MASK) == 0){
+          buttons &= ~F_MASK;
+          if((buttons & M_MASK) == 0){
             // Hit back, so crevert to SELECT
             UI_state = SELECT;
             relay_enable = false;
@@ -155,24 +155,24 @@ bool UI_state_machine(PMODTC1_data data, char *str1, char *str2, volatile byte *
             strcpy(str1, "TMP: ");
             sprintf(str_temp, "%3d", (int)data.oven_temp);
             strcat(str1, str_temp);
-            strcat(str1,"-> ");
+            strcat(str1," -> ");
             sprintf(str_temp, "%3d", (int)temp_end);
             strcat(str1, str_temp);
-            strcpy(str2, "SET: ");
+            strcpy(str2, "ADJ: ");
             sprintf(str_temp, "%3d", (MANUAL_var+1) * 10);
             strcat(str2, str_temp);
             break;
         }
         
         // check buttons
-        if((*buttons & F_MASK) > 0){
+        if((buttons & F_MASK) > 0){
           // clear flag
-          *buttons &= ~F_MASK;
-          if((*buttons & L_MASK) == 0){
+          buttons &= ~F_MASK;
+          if((buttons & L_MASK) == 0){
             MANUAL_var = max(0, MANUAL_var-1);
-          } else if((*buttons & R_MASK) == 0){
-            MANUAL_var = min(30, MANUAL_var+1);
-          } else if((*buttons & M_MASK) == 0){
+          } else if((buttons & R_MASK) == 0){
+            MANUAL_var = min(29, MANUAL_var+1);
+          } else if((buttons & M_MASK) == 0){
             // Hit enter, so change state
             if(MANUAL_var == 0){
               // user wants to go back to SELECT state

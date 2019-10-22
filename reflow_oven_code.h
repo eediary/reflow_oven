@@ -37,6 +37,7 @@
 // Constants
 #define ALENGTH (7) // number of points in a single profile
 #define ADEPTH (2) // number of profiles
+#define DEBOUNCE_TIME 10 // debounce delay in ms
 
 // Arrays
 // initial temp and time profiles were based off of the datasheet for the solder paste
@@ -46,8 +47,8 @@ const int temp_array[ADEPTH][ALENGTH] = {
   {25, 150, 175, 217, 249, 217, 25}
 };
 const unsigned long time_array[ADEPTH][ALENGTH] = {
-  {0, 90000UL, 180000UL, 210000UL, 250000UL, 280000UL, 280100UL},
-  {0, 110000UL, 200000UL, 250000UL, 300000UL, 330000UL, 330100UL}
+  {0, 90000UL, 180000UL, 210000UL, 250000UL, 251000UL, 252000UL},
+  {0, 110000UL, 200000UL, 250000UL, 300000UL, 301000UL, 302000UL}
 };
 
 #endif
